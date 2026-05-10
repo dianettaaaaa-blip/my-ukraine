@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Моя Україна 🇺🇦</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;700;900&family=Geologica:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyCqVyP_L5OmdJ-kHwxCEeQIu7HPXbKMqaQ",
+    authDomain: "my-ukraine-41323.firebaseapp.com",
+    projectId: "my-ukraine-41323",
+    storageBucket: "my-ukraine-41323.firebasestorage.app",
+    messagingSenderId: "742846365212",
+    appId: "1:742846365212:web:d9f80edf44825c29ff69d9"
+  };
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const provider = new GoogleAuthProvider();
+  window._auth = auth;
+  window._provider = provider;
+  window._signInWithPopup = signInWithPopup;
+  window._signOut = signOut;
+  window._onAuthStateChanged = onAuthStateChanged;
+</script>
+<style>
+:root {
+  --bg:#0b0d13;--surface:#12151f;--card:#181c2a;--card-hover:#1e2235;
+  --border:#252a3d;--border-light:#2f3550;--blue:#2563eb;--blue-light:#3b82f6;
+  --yellow:#fbbf24;--yellow-dim:#d97706;--yellow-glow:rgba(251,191,36,0.12);
+  --red:#ef4444;--red-glow:rgba(239,68,68,0.1);
+  --text:#e2e8f0;--text-dim:#64748b;--text-mid:#94a3b8;--radius:16px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:'Geologica',sans-serif;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 60% 40% at 10% 10%,rgba(37,99,235,0.07) 0%,transparent 60%),radial-gradient(ellipse 50% 50% at 90% 90%,rgba(251,191,36,0.05) 0%,transparent 60%);pointer-events:none;z-index:0;}
+
+/* HEADER */
+header{position:sticky;top:0;z-index:100;background:rgba(11,13,19,0.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0.85rem 1.5rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap;}
+.logo{font-family:'Unbounded',sans-serif;font-size:1rem;font-weight:900;white-space:nowrap;cursor:pointer;}
+.logo .y{color:var(--yellow);}
+.header-search{flex:1;min-width:160px;max-width:320px;position:relative;}
+.header-search input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:0.5rem 1rem 0.5rem 2.4rem;color:var(--text);font-family:'Geologica',sans-serif;font-size:0.85rem;outline:none;transition:border-color 0.2s;}
+.header-search input:focus{border-color:var(--yellow);}
+.header-search input::placeholder{color:var(--text-dim);}
+.s-ico{position:absolute;left:0.85rem;top:50%;transform:translateY(-50%);color:var(--text-dim);font-size:0.8rem;}
+.auth-area{display:flex;align-items:center;gap:0.75rem;margin-left:auto;}
+.user-avatar{width:32px;height:32px;border-radius:50%;border:2px solid var(--yellow);object-fit:cover;cursor:pointer;}
+.user-name{font-size:0.8rem;color:var(--text-mid);max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;}
+.btn-auth{background:var(--yellow);color:#0b0d13;border:none;border-radius:10px;font-family:'Geologica',sans-serif;font-size:0.8rem;font-weight:600;padding:0.45rem 1rem;cursor:pointer;transition:all 0.2s;white-space:nowrap;}
+.btn-auth:hover{background:#fcd34d;}
+.btn-signout{background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:10px;font-family:'Geologica',sans-serif;font-size:0.75rem;padding:0.4rem 0.8rem;cursor:pointer;transition:all 0.2s;}
+.btn-signout:hover{border-color:var(--red);color:var(--red);}
+
+/* PAGES */
+.page{display:none;}
+.page.active{display:block;}
+
+/* HOME PAGE */
+.hero{position:relative;z-index:1;text-align:center;padding:2rem 1.5rem 1.5rem;}
+.flag-bar{display:inline-flex;gap:5px;margin-bottom:1rem;}
+.flag-bar span{width:24px;height:4px;border-radius:2px;}
+.fb{background:var(--blue);}.fy{background:var(--yellow);}
+h1{font-family:'Unbounded',sans-serif;font-size:clamp(1.6rem,4vw,2.5rem);font-weight:900;line-height:1.05;letter-spacing:-0.03em;}
+h1 em{color:var(--yellow);font-style:normal;}
+.hero p{margin-top:0.5rem;color:var(--text-mid);font-size:0.9rem;font-weight:300;}
+
+.stats-row{position:relative;z-index:1;display:flex;justify-content:center;max-width:560px;margin:1.25rem auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+.stat-item{flex:1;padding:1rem 0.75rem;text-align:center;border-right:1px solid var(--border);}
+.stat-item:last-child{border-right:none;}
+.stat-num{font-family:'Unbounded',sans-serif;font-size:1.5rem;font-weight:700;color:var(--yellow);line-height:1;}
+.stat-lbl{font-size:0.62rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.1em;margin-top:4px;}
+.progress-wrap{max-width:560px;margin:-0.75rem auto 1.5rem;padding:0 1rem;}
+.progress-track{height:3px;background:var(--border);border-radius:999px;overflow:hidden;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--blue-light),var(--yellow));border-radius:999px;transition:width 0.6s;}
+
+.tabs{position:relative;z-index:1;display:flex;justify-content:center;gap:0.5rem;padding:0 1rem 1.5rem;}
+.tab{background:var(--surface);border:1px solid var(--border);border-radius:12px;color:var(--text-dim);font-family:'Geologica',sans-serif;font-size:0.85rem;padding:0.6rem 1.2rem;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:0.4rem;}
+.tab:hover{border-color:var(--yellow-dim);color:var(--text);}
+.tab.active{background:var(--yellow);border-color:var(--yellow);color:#0b0d13;font-weight:600;}
+
+/* MAP */
+.map-section{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:0 1.5rem 2rem;display:none;}
+.map-section.active{display:block;}
+.map-wrap{border-radius:20px;overflow:hidden;border:1px solid var(--border);box-shadow:0 20px 60px rgba(0,0,0,0.5);}
+#map{height:500px;width:100%;background:var(--card);}
+.map-legend{display:flex;gap:1.5rem;justify-content:center;margin-top:1rem;flex-wrap:wrap;}
+.legend-item{display:flex;align-items:center;gap:0.5rem;font-size:0.78rem;color:var(--text-mid);}
+.legend-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
+.ld-visited{background:var(--yellow);}.ld-occupied{background:var(--red);}.ld-free{background:#4b5563;}
+.leaflet-container{background:#0d1117 !important;}
+.leaflet-popup-content-wrapper{background:var(--surface);border:1px solid var(--border-light);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.5);}
+.leaflet-popup-content{margin:0.75rem 1rem;color:var(--text);}
+.leaflet-popup-tip{background:var(--surface);}
+.popup-name{font-family:'Unbounded',sans-serif;font-size:0.85rem;font-weight:700;margin-bottom:0.25rem;}
+.popup-region{font-size:0.7rem;color:var(--text-dim);margin-bottom:0.5rem;}
+.popup-btn{background:var(--yellow);color:#0b0d13;border:none;border-radius:8px;font-family:'Geologica',sans-serif;font-size:0.75rem;font-weight:600;padding:0.35rem 0.75rem;cursor:pointer;width:100%;}
+.popup-occ{font-size:0.72rem;color:#fca5a5;font-style:italic;text-align:center;}
+
+/* LIST */
+.list-section{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:0 1.5rem 5rem;display:none;}
+.list-section.active{display:block;}
+.controls{display:flex;justify-content:center;gap:0.4rem;margin-bottom:1.25rem;flex-wrap:wrap;}
+.pill{background:var(--surface);border:1px solid var(--border);border-radius:999px;color:var(--text-dim);font-family:'Geologica',sans-serif;font-size:0.78rem;padding:0.4rem 1rem;cursor:pointer;transition:all 0.18s;}
+.pill:hover{border-color:var(--yellow-dim);color:var(--text);}
+.pill.active{background:var(--yellow);border-color:var(--yellow);color:#0b0d13;font-weight:500;}
+.pill.occ{border-color:rgba(239,68,68,0.4);color:#fca5a5;}
+.pill.occ.active{background:var(--red);border-color:var(--red);color:#fff;}
+.region-select-wrap{display:flex;justify-content:center;margin-bottom:2rem;}
+.region-select-wrap select{background:var(--surface);border:1px solid var(--border);border-radius:12px;color:var(--text);font-family:'Geologica',sans-serif;font-size:0.85rem;padding:0.5rem 2rem 0.5rem 1rem;outline:none;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 0.75rem center;}
+.loading{text-align:center;padding:4rem;color:var(--text-dim);}
+.spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--yellow);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 1rem;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.region-block{margin-bottom:2.5rem;}
+.region-header{display:flex;align-items:center;gap:1rem;margin-bottom:1rem;}
+.region-label{font-family:'Unbounded',sans-serif;font-size:0.58rem;font-weight:400;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.15em;}
+.region-line{flex:1;height:1px;background:var(--border);}
+.region-count{font-size:0.7rem;color:var(--text-dim);background:var(--surface);border:1px solid var(--border);border-radius:999px;padding:0.18rem 0.65rem;}
+.city-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:0.6rem;}
+.city-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:0.9rem;cursor:pointer;transition:all 0.2s cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden;display:flex;flex-direction:column;gap:0.45rem;}
+.city-card::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--yellow-glow) 0%,transparent 60%);opacity:0;transition:opacity 0.2s;}
+.city-card:hover{border-color:var(--border-light);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.3);}
+.city-card:hover::after{opacity:1;}
+.city-card.visited{border-color:rgba(251,191,36,0.4);background:#191c0f;box-shadow:0 0 20px var(--yellow-glow);}
+.city-card.visited::after{opacity:1;}
+.city-card.occupied{border-color:rgba(239,68,68,0.2);background:#150f0f;}
+.city-card.occupied::after{background:linear-gradient(135deg,var(--red-glow) 0%,transparent 60%);opacity:1;}
+.city-card.occupied:hover{border-color:rgba(239,68,68,0.45);}
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:0.4rem;}
+.city-name{font-family:'Unbounded',sans-serif;font-size:0.75rem;font-weight:700;line-height:1.3;color:var(--text);flex:1;}
+.city-card.visited .city-name{color:var(--yellow);}
+.city-card.occupied .city-name{color:#fca5a5;}
+.city-ico{font-size:1rem;flex-shrink:0;}
+.city-type-badge{font-size:0.6rem;color:var(--text-dim);background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:0.1rem 0.45rem;align-self:flex-start;}
+.occ-hint{font-size:0.68rem;color:#fca5a5;font-style:italic;font-weight:300;line-height:1.4;padding-top:0.25rem;border-top:1px solid rgba(239,68,68,0.2);}
+.card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:0.3rem;}
+.visit-check{width:20px;height:20px;border-radius:6px;border:2px solid var(--border-light);display:flex;align-items:center;justify-content:center;font-size:10px;transition:all 0.2s;}
+.city-card.visited .visit-check{background:var(--yellow);border-color:var(--yellow);color:#0b0d13;}
+.city-rating{font-size:0.65rem;color:var(--yellow);}
+.empty-state{text-align:center;padding:4rem 2rem;color:var(--text-dim);}
+.empty-state .e-ico{font-size:3rem;display:block;margin-bottom:1rem;}
+.pagination{display:flex;justify-content:center;align-items:center;gap:0.5rem;margin-top:2rem;flex-wrap:wrap;}
+.page-btn{background:var(--surface);border:1px solid var(--border);border-radius:10px;color:var(--text-dim);font-family:'Geologica',sans-serif;font-size:0.82rem;padding:0.45rem 0.85rem;cursor:pointer;transition:all 0.18s;}
+.page-btn:hover{border-color:var(--yellow-dim);color:var(--text);}
+.page-btn.active{background:var(--yellow);border-color:var(--yellow);color:#0b0d13;font-weight:500;}
+.page-btn:disabled{opacity:0.35;cursor:default;}
+
+/* PROFILE PAGE */
+.profile-page{max-width:800px;margin:0 auto;padding:2rem 1.5rem 5rem;position:relative;z-index:1;}
+.profile-header{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:2rem;margin-bottom:1.5rem;position:relative;}
+.profile-avatar{width:80px;height:80px;border-radius:50%;border:3px solid var(--yellow);object-fit:cover;margin-bottom:1rem;}
+.profile-avatar-ph{width:80px;height:80px;border-radius:50%;border:3px solid var(--yellow);background:var(--card);display:flex;align-items:center;justify-content:center;font-size:2rem;margin-bottom:1rem;}
+.profile-name{font-family:'Unbounded',sans-serif;font-size:1.5rem;font-weight:900;margin-bottom:0.25rem;}
+.profile-bio{font-size:0.9rem;color:var(--text-mid);margin-bottom:1rem;font-weight:300;}
+.profile-stats{display:flex;gap:2rem;flex-wrap:wrap;}
+.profile-stat{text-align:center;}
+.profile-stat-num{font-family:'Unbounded',sans-serif;font-size:1.5rem;font-weight:700;color:var(--yellow);}
+.profile-stat-lbl{font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;}
+
+.share-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;}
+.share-url{flex:1;font-size:0.8rem;color:var(--text-mid);font-family:monospace;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.75rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.btn-copy{background:var(--yellow);color:#0b0d13;border:none;border-radius:8px;font-family:'Geologica',sans-serif;font-size:0.8rem;font-weight:600;padding:0.5rem 1rem;cursor:pointer;white-space:nowrap;transition:all 0.2s;}
+.btn-copy:hover{background:#fcd34d;}
+
+.edit-profile-btn{position:absolute;top:1.5rem;right:1.5rem;background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:10px;font-family:'Geologica',sans-serif;font-size:0.78rem;padding:0.4rem 0.85rem;cursor:pointer;transition:all 0.2s;}
+.edit-profile-btn:hover{border-color:var(--yellow);color:var(--yellow);}
+
+.visited-cities-list{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:1.5rem;}
+.visited-cities-list h3{font-family:'Unbounded',sans-serif;font-size:0.7rem;font-weight:400;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:1rem;}
+.visited-chip{display:inline-flex;align-items:center;gap:0.35rem;background:var(--card);border:1px solid rgba(251,191,36,0.3);border-radius:999px;padding:0.3rem 0.75rem;font-size:0.78rem;color:var(--yellow);margin:0.25rem;}
+
+/* VIEWING FRIEND */
+.friend-banner{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem 1.5rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:1rem;position:relative;z-index:1;max-width:1200px;margin:0 auto 1rem;padding:1rem 1.5rem;}
+.friend-banner img{width:36px;height:36px;border-radius:50%;border:2px solid var(--yellow);}
+.friend-banner-info{flex:1;}
+.friend-banner-name{font-family:'Unbounded',sans-serif;font-size:0.85rem;font-weight:700;color:var(--yellow);}
+.friend-banner-sub{font-size:0.72rem;color:var(--text-dim);}
+.btn-back{background:transparent;color:var(--text-dim);border:1px solid var(--border);border-radius:10px;font-family:'Geologica',sans-serif;font-size:0.78rem;padding:0.4rem 0.85rem;cursor:pointer;transition:all 0.2s;}
+.btn-back:hover{border-color:var(--text);color:var(--text);}
+
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(10px);z-index:500;align-items:center;justify-content:center;padding:1rem;}
+.overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border-light);border-radius:24px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;animation:mIn 0.25s cubic-bezier(.4,0,.2,1);}
+@keyframes mIn{from{opacity:0;transform:scale(0.95) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.modal-img{width:100%;height:180px;object-fit:cover;border-radius:24px 24px 0 0;display:block;}
+.modal-img-ph{width:100%;height:180px;background:var(--card);border-radius:24px 24px 0 0;display:flex;align-items:center;justify-content:center;font-size:4rem;}
+.modal-body{padding:1.5rem;}
+.modal-top{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:0.75rem;}
+.modal-city-name{font-family:'Unbounded',sans-serif;font-size:1.4rem;font-weight:900;line-height:1.1;}
+.modal-region{font-size:0.72rem;color:var(--text-dim);margin-top:0.25rem;text-transform:uppercase;letter-spacing:0.08em;}
+.close-btn{background:var(--card);border:1px solid var(--border);border-radius:50%;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--text-dim);font-size:0.9rem;flex-shrink:0;transition:all 0.2s;}
+.close-btn:hover{border-color:var(--text);color:var(--text);}
+.modal-desc{font-size:0.87rem;color:var(--text-mid);line-height:1.7;margin-bottom:1rem;font-weight:300;}
+.wiki-link{font-size:0.75rem;color:var(--blue-light);text-decoration:none;display:inline-flex;align-items:center;gap:0.3rem;margin-bottom:1rem;}
+.wiki-link:hover{text-decoration:underline;}
+.occ-note{background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.2);border-radius:12px;padding:1rem;margin-bottom:1.25rem;text-align:center;}
+.occ-note .heart{font-size:1.4rem;display:block;margin-bottom:0.4rem;}
+.occ-note p{font-size:0.83rem;color:#fca5a5;font-style:italic;line-height:1.5;}
+.divider{height:1px;background:var(--border);margin:1.1rem 0;}
+.note-sec label{display:block;font-size:0.68rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.4rem;}
+.note-sec textarea{width:100%;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.65rem;color:var(--text);font-family:'Geologica',sans-serif;font-size:0.85rem;resize:vertical;min-height:75px;outline:none;transition:border-color 0.2s;margin-bottom:0.85rem;}
+.note-sec textarea:focus{border-color:var(--yellow);}
+.note-sec textarea::placeholder{color:var(--text-dim);}
+.stars-row{display:flex;gap:0.35rem;margin-bottom:1.1rem;}
+.star{font-size:1.4rem;cursor:pointer;color:var(--border-light);transition:color 0.15s,transform 0.15s;line-height:1;}
+.star:hover,.star.on{color:var(--yellow);transform:scale(1.1);}
+.modal-actions{display:flex;gap:0.6rem;}
+.btn{flex:1;padding:0.65rem 1rem;border-radius:12px;font-family:'Geologica',sans-serif;font-size:0.85rem;font-weight:500;cursor:pointer;border:none;transition:all 0.2s;}
+.btn-ghost{background:transparent;color:var(--text-dim);border:1px solid var(--border);}
+.btn-ghost:hover{border-color:var(--text-dim);color:var(--text);}
+.btn-save{background:var(--yellow);color:#0b0d13;}
+.btn-save:hover{background:#fcd34d;}
+.btn-unmark{background:transparent;color:var(--red);border:1px solid rgba(239,68,68,0.3);}
+.btn-unmark:hover{background:rgba(239,68,68,0.1);}
+
+/* EDIT MODAL */
+.edit-modal{background:var(--surface);border:1px solid var(--border-light);border-radius:24px;width:100%;max-width:440px;padding:2rem;animation:mIn 0.25s cubic-bezier(.4,0,.2,1);}
+.edit-modal h3{font-family:'Unbounded',sans-serif;font-size:1rem;font-weight:700;margin-bottom:1.5rem;}
+.edit-modal label{display:block;font-size:0.7rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.4rem;}
+.edit-modal input,.edit-modal textarea{width:100%;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.65rem;color:var(--text);font-family:'Geologica',sans-serif;font-size:0.85rem;outline:none;transition:border-color 0.2s;margin-bottom:1rem;}
+.edit-modal input:focus,.edit-modal textarea:focus{border-color:var(--yellow);}
+.edit-modal textarea{resize:vertical;min-height:60px;}
+.edit-actions{display:flex;gap:0.6rem;}
+
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:0.75rem 1.25rem;font-size:0.85rem;color:var(--text);box-shadow:0 8px 32px rgba(0,0,0,0.4);z-index:600;opacity:0;transition:opacity 0.3s;white-space:nowrap;}
+.toast.show{opacity:1;}
+
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:var(--border-light);border-radius:3px;}
+@media(max-width:600px){.city-grid{grid-template-columns:repeat(auto-fill,minmax(145px,1fr));}.user-name{display:none;}#map{height:360px;}.tabs{gap:0.3rem;}.tab{font-size:0.78rem;padding:0.5rem 0.85rem;}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo" onclick="goHome()">🇺🇦 Моя <span class="y">Україна</span></div>
+  <div class="header-search">
+    <span class="s-ico">🔍</span>
+    <input type="text" id="searchInput" placeholder="Пошук...">
+  </div>
+  <div class="auth-area" id="authArea">
+    <button class="btn-auth" id="btnSignIn">🔑 Увійти через Google</button>
+  </div>
+</header>
+
+<!-- HOME PAGE -->
+<div class="page active" id="homePage">
+  <div class="hero">
+    <div class="flag-bar"><span class="fb"></span><span class="fb"></span><span class="fy"></span><span class="fy"></span></div>
+    <h1>Досліджуй<br><em>свою країну</em></h1>
+    <p>Відмічай міста та селища, де ти вже побував</p>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-item"><div class="stat-num" id="sVisited">0</div><div class="stat-lbl">Відвідано</div></div>
+    <div class="stat-item"><div class="stat-num" id="sTotal">—</div><div class="stat-lbl">Всього</div></div>
+    <div class="stat-item"><div class="stat-num" id="sPct">0%</div><div class="stat-lbl">Охоплення</div></div>
+  </div>
+  <div class="progress-wrap"><div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div></div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="map">🗺️ Карта</button>
+    <button class="tab" data-tab="list">📋 Список</button>
+  </div>
+
+  <!-- MAP -->
+  <div class="map-section active" id="mapSection">
+    <div class="map-wrap"><div id="map"></div></div>
+    <div class="map-legend">
+      <div class="legend-item"><div class="legend-dot ld-visited"></div>Відвідано</div>
+      <div class="legend-item"><div class="legend-dot ld-free"></div>Ще не був</div>
+      <div class="legend-item"><div class="legend-dot ld-occupied"></div>Тимчасово окуповано</div>
+    </div>
+  </div>
+
+  <!-- LIST -->
+  <div class="list-section" id="listSection">
+    <div class="controls">
+      <button class="pill active" data-f="all">Усі</button>
+      <button class="pill" data-f="visited">✓ Відвідані</button>
+      <button class="pill" data-f="free">🗺 Ще не був</button>
+      <button class="pill occ" data-f="occupied">💔 Окуповані</button>
+    </div>
+    <div class="region-select-wrap">
+      <select id="regionSelect"><option value="">🗺️ Всі регіони</option></select>
+    </div>
+    <div id="mainContent">
+      <div class="loading"><div class="spinner"></div>Завантаження...</div>
+    </div>
+  </div>
+</div>
+
+<!-- PROFILE PAGE -->
+<div class="page" id="profilePage">
+  <div class="profile-page">
+    <div class="profile-header" id="profileHeader">
+      <button class="edit-profile-btn" id="editProfileBtn" style="display:none" onclick="openEditModal()">✏️ Редагувати</button>
+      <div id="profileAvatarWrap"></div>
+      <div class="profile-name" id="profileName"></div>
+      <div class="profile-bio" id="profileBio"></div>
+      <div class="profile-stats">
+        <div class="profile-stat"><div class="profile-stat-num" id="profileVisited">0</div><div class="profile-stat-lbl">Відвідано</div></div>
+        <div class="profile-stat"><div class="profile-stat-num" id="profilePct">0%</div><div class="profile-stat-lbl">Охоплення</div></div>
+      </div>
+    </div>
+
+    <div class="share-box" id="shareBox" style="display:none">
+      <div class="share-url" id="shareUrl"></div>
+      <button class="btn-copy" onclick="copyShareLink()">📋 Копіювати</button>
+    </div>
+
+    <div class="visited-cities-list" id="visitedCitiesList">
+      <h3>Відвідані міста</h3>
+      <div id="visitedChips"></div>
+    </div>
+  </div>
+</div>
+
+<!-- FRIEND VIEW BANNER -->
+<div id="friendBanner" style="display:none">
+  <div class="friend-banner">
+    <div id="friendAvatarWrap"></div>
+    <div class="friend-banner-info">
+      <div class="friend-banner-name" id="friendName"></div>
+      <div class="friend-banner-sub">Перегляд карти друга</div>
+    </div>
+    <button class="btn-back" onclick="goHome()">← Моя карта</button>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <div id="mImgWrap"></div>
+    <div class="modal-body">
+      <div class="modal-top">
+        <div><div class="modal-city-name" id="mName"></div><div class="modal-region" id="mRegion"></div></div>
+        <button class="close-btn" id="closeBtn">✕</button>
+      </div>
+      <div class="modal-desc" id="mDesc"></div>
+      <a class="wiki-link" id="mWikiLink" href="#" target="_blank" style="display:none">📖 Читати у Вікіпедії ↗</a>
+      <div id="mOccNote"></div>
+      <div class="divider" id="mDivider"></div>
+      <div class="note-sec" id="mNoteSec">
+        <label>Твої нотатки</label>
+        <textarea id="mNote" placeholder="Що запам'яталось?"></textarea>
+        <label>Оцінка</label>
+        <div class="stars-row">
+          <span class="star" data-v="1">★</span><span class="star" data-v="2">★</span>
+          <span class="star" data-v="3">★</span><span class="star" data-v="4">★</span><span class="star" data-v="5">★</span>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" id="mCancel">Закрити</button>
+          <button class="btn btn-unmark" id="mUnmark" style="display:none">Зняти ✗</button>
+          <button class="btn btn-save" id="mSave">Відмітити ✓</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT PROFILE MODAL -->
+<div class="overlay" id="editOverlay">
+  <div class="edit-modal">
+    <h3>✏️ Редагувати профіль</h3>
+    <label>Ім'я</label>
+    <input type="text" id="editName" placeholder="Твоє ім'я">
+    <label>Про себе</label>
+    <textarea id="editBio" placeholder="Розкажи про свої подорожі..."></textarea>
+    <div class="edit-actions">
+      <button class="btn btn-ghost" onclick="closeEditModal()">Скасувати</button>
+      <button class="btn btn-save" onclick="saveProfile()">Зберегти</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL='https://jsfdcbocowbzbmjipxog.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpzZmRjYm9jb3diemJtamlweG9nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzNTc1ODksImV4cCI6MjA5MzkzMzU4OX0.m7-SB2Yahfqb_KNiMtwPib07eBa9TJ2kSFdsJBOx0hU';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
+let currentUser=null,allSettlements=[],filtered=[],userVisits={};
+let currentFilter='all',currentRegion='',searchQuery='',currentPage=1,activeCity=null,activeRating=0;
+let viewingUserId=null,viewingUserVisits={};
+const PAGE_SIZE=60;
+const LS_KEY='ua_travel_v4';
+let map=null,markers={};
+
+function loadLocal(){try{return JSON.parse(localStorage.getItem(LS_KEY))||{};}catch{return{};}}
+function saveLocal(d){localStorage.setItem(LS_KEY,JSON.stringify(d));}
+function showToast(msg,dur=2500){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),dur);}
+
+function getEmoji(s){
+  if(s.occupied)return'💔';
+  const m={'Київ':'🏛️','Харків':'🏙️','Одеса':'🌊','Дніпро':'🚀','Запоріжжя':'⚔️','Луцьк':'🏯','Львів':'🦁','Чернівці':'🎓','Ужгород':'🍒','Тернопіль':'🏰','Рівне':'🌿','Чернігів':'⛪','Суми':'🏘️','Полтава':'🎗️','Черкаси':'🌊','Кропивницький':'🎭','Вінниця':'⛲','Житомир':'🎻','Миколаїв':'⚓','Херсон':'🌾','Маріуполь':'💙','Донецьк':'💔','Луганськ':'💔','Мукачево':'🍷','Коломия':'🥚','Ялта':'🌴','Канів':'📜','Умань':'🌺','Трускавець':'💧','Яремче':'⛰️','Буча':'💙','Ірпінь':'💙','Острог':'📚'};
+  if(s.type==='селище')return'🏘️';
+  return m[s.name]||'🏙️';
+}
+
+// AUTH
+function waitForAuth(){return new Promise(r=>{const c=()=>{if(window._onAuthStateChanged)r();else setTimeout(c,100);};c();});}
+
+async function initAuth(){
+  await waitForAuth();
+  window._onAuthStateChanged(window._auth,async user=>{
+    currentUser=user;updateAuthUI();
+    if(user){
+      await loadUserVisits();
+      await ensureProfile(user);
+    }else{
+      userVisits=loadLocal();
+    }
+    // Check URL for friend viewing
+    const params=new URLSearchParams(window.location.search);
+    const friendId=params.get('user');
+    if(friendId&&friendId!==currentUser?.uid){
+      await viewFriendProfile(friendId);
+    }
+    updateStats();renderList();updateMapMarkers();
+  });
+}
+
+function updateAuthUI(){
+  const area=document.getElementById('authArea');
+  if(currentUser){
+    area.innerHTML=`
+      ${currentUser.photoURL?`<img class="user-avatar" src="${currentUser.photoURL}" alt="" onclick="showMyProfile()">`:'<div style="cursor:pointer;font-size:1.5rem" onclick="showMyProfile()">👤</div>'}
+      <span class="user-name" onclick="showMyProfile()">${currentUser.displayName||currentUser.email}</span>
+      <button class="btn-signout" id="btnSignOut">Вийти</button>`;
+    document.getElementById('btnSignOut').addEventListener('click',handleSignOut);
+  }else{
+    area.innerHTML=`<button class="btn-auth" id="btnSignIn">🔑 Увійти через Google</button>`;
+    document.getElementById('btnSignIn').addEventListener('click',handleSignIn);
+  }
+}
+
+async function handleSignIn(){
+  try{await window._signInWithPopup(window._auth,window._provider);showToast('✅ Успішний вхід!');}
+  catch(e){showToast('❌ Помилка входу');}
+}
+async function handleSignOut(){
+  await window._signOut(window._auth);
+  userVisits={};viewingUserId=null;
+  showToast('👋 Вийшли');
+  goHome();updateStats();renderList();updateMapMarkers();
+}
+
+// PROFILE
+async function ensureProfile(user){
+  const{data}=await sb.from('user_profiles').select('*').eq('id',user.uid).single();
+  if(!data){
+    await sb.from('user_profiles').insert({
+      id:user.uid,
+      display_name:user.displayName||'Мандрівник',
+      photo_url:user.photoURL||null,
+      bio:'',
+      is_public:true
+    });
+  }
+}
+
+async function showMyProfile(){
+  if(!currentUser){showToast('⚠️ Спочатку увійди в акаунт');return;}
+  viewingUserId=null;
+  document.getElementById('friendBanner').style.display='none';
+
+  const{data:profile}=await sb.from('user_profiles').select('*').eq('id',currentUser.uid).single();
+  const free=allSettlements.filter(s=>!s.occupied);
+  const vis=free.filter(s=>userVisits[s.id]?.visited).length;
+  const pct=free.length?Math.round(vis/free.length*100):0;
+
+  // Avatar
+  const avatarWrap=document.getElementById('profileAvatarWrap');
+  if(currentUser.photoURL)avatarWrap.innerHTML=`<img class="profile-avatar" src="${currentUser.photoURL}" alt="">`;
+  else avatarWrap.innerHTML=`<div class="profile-avatar-ph">👤</div>`;
+
+  document.getElementById('profileName').textContent=profile?.display_name||currentUser.displayName||'Мандрівник';
+  document.getElementById('profileBio').textContent=profile?.bio||'Досліджую Україну 🇺🇦';
+  document.getElementById('profileVisited').textContent=vis;
+  document.getElementById('profilePct').textContent=pct+'%';
+  document.getElementById('editProfileBtn').style.display='block';
+
+  // Share link
+  const shareUrl=`${window.location.origin}${window.location.pathname}?user=${currentUser.uid}`;
+  document.getElementById('shareBox').style.display='flex';
+  document.getElementById('shareUrl').textContent=shareUrl;
+
+  // Visited chips
+  const visitedCities=allSettlements.filter(s=>userVisits[s.id]?.visited&&!s.occupied);
+  document.getElementById('visitedChips').innerHTML=visitedCities.length
+    ?visitedCities.map(s=>`<span class="visited-chip">${getEmoji(s)} ${s.name}</span>`).join('')
+    :'<span style="color:var(--text-dim);font-size:0.85rem">Ще жодного міста не відмічено</span>';
+
+  // Pre-fill edit form
+  document.getElementById('editName').value=profile?.display_name||currentUser.displayName||'';
+  document.getElementById('editBio').value=profile?.bio||'';
+
+  showPage('profilePage');
+}
+
+async function viewFriendProfile(userId){
+  const{data:profile}=await sb.from('user_profiles').select('*').eq('id',userId).eq('is_public',true).single();
+  if(!profile){showToast('❌ Профіль не знайдено або закритий');return;}
+
+  const{data:visits}=await sb.from('user_visits').select('*').eq('user_id',userId);
+  viewingUserVisits={};
+  if(visits)visits.forEach(v=>{viewingUserVisits[v.settlement_id]=v;});
+  viewingUserId=userId;
+
+  // Show banner
+  const banner=document.getElementById('friendBanner');
+  const avatarWrap=document.getElementById('friendAvatarWrap');
+  if(profile.photo_url)avatarWrap.innerHTML=`<img src="${profile.photo_url}" alt="" style="width:36px;height:36px;border-radius:50%;border:2px solid var(--yellow);">`;
+  else avatarWrap.innerHTML=`<div style="font-size:1.5rem">👤</div>`;
+  document.getElementById('friendName').textContent=profile.display_name||'Мандрівник';
+  banner.style.display='block';
+
+  updateMapMarkersForUser(viewingUserVisits);
+  showToast(`👀 Переглядаєш карту ${profile.display_name}`);
+}
+
+function copyShareLink(){
+  const url=document.getElementById('shareUrl').textContent;
+  navigator.clipboard.writeText(url).then(()=>showToast('✅ Посилання скопійовано!'));
+}
+
+function openEditModal(){document.getElementById('editOverlay').classList.add('open');}
+function closeEditModal(){document.getElementById('editOverlay').classList.remove('open');}
+
+async function saveProfile(){
+  if(!currentUser)return;
+  const name=document.getElementById('editName').value.trim();
+  const bio=document.getElementById('editBio').value.trim();
+  await sb.from('user_profiles').upsert({id:currentUser.uid,display_name:name||'Мандрівник',bio,photo_url:currentUser.photoURL},{onConflict:'id'});
+  closeEditModal();
+  showToast('✅ Профіль оновлено!');
+  showMyProfile();
+}
+
+// NAVIGATION
+function showPage(pageId){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+}
+
+function goHome(){
+  viewingUserId=null;
+  document.getElementById('friendBanner').style.display='none';
+  showPage('homePage');
+  updateMapMarkers();
+  // Clear URL params
+  window.history.replaceState({},document.title,window.location.pathname);
+}
+
+// SUPABASE VISITS
+async function loadUserVisits(){
+  if(!currentUser)return;
+  const{data}=await sb.from('user_visits').select('*').eq('user_id',currentUser.uid);
+  if(data){userVisits={};data.forEach(v=>{userVisits[v.settlement_id]=v;});}
+}
+
+async function saveVisit(id,note,rating){
+  if(!currentUser){userVisits[id]={visited:true,note,rating};saveLocal(userVisits);showToast('✅ Збережено!');return;}
+  const{error}=await sb.from('user_visits').upsert({user_id:currentUser.uid,settlement_id:id,note,rating,visited_at:new Date().toISOString()},{onConflict:'user_id,settlement_id'});
+  if(!error){userVisits[id]={visited:true,note,rating};showToast('✅ Збережено!');}
+  else showToast('❌ Помилка');
+}
+
+async function removeVisit(id){
+  if(!currentUser){delete userVisits[id];saveLocal(userVisits);showToast('🗑️ Знято');return;}
+  await sb.from('user_visits').delete().eq('user_id',currentUser.uid).eq('settlement_id',id);
+  delete userVisits[id];showToast('🗑️ Відмітку знято');
+}
+
+// FETCH
+async function fetchAll(){
+  const{data,error}=await sb.from('settlements').select('*').order('region').order('name');
+  if(error){document.getElementById('mainContent').innerHTML='<div class="empty-state"><span class="e-ico">⚠️</span>Помилка</div>';return;}
+  allSettlements=data||[];
+  const sel=document.getElementById('regionSelect');
+  [...new Set(allSettlements.map(s=>s.region))].sort().forEach(r=>{const o=document.createElement('option');o.value=r;o.textContent=r;sel.appendChild(o);});
+  initMap();applyFilters();updateStats();
+}
+
+// MAP
+function initMap(){
+  if(map)return;
+  map=L.map('map',{center:[49.0,32.0],zoom:6,zoomControl:true,scrollWheelZoom:true});
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'© OpenStreetMap © CARTO',subdomains:'abcd',maxZoom:19}).addTo(map);
+  allSettlements.forEach(s=>{if(s.lat&&s.lng)addMarker(s,userVisits);});
+}
+
+function addMarker(s,visits){
+  const isV=!!visits[s.id]?.visited;
+  const color=s.occupied?'#ef4444':isV?'#fbbf24':'#4b5563';
+  const size=s.type==='місто'?10:7;
+  const icon=L.divIcon({
+    className:'',
+    html:`<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};border:2px solid ${s.occupied?'#991b1b':isV?'#d97706':'#6b7280'};box-shadow:0 0 ${isV?'8px 2px rgba(251,191,36,0.6)':s.occupied?'6px 2px rgba(239,68,68,0.5)':'4px rgba(0,0,0,0.3)'};"></div>`,
+    iconSize:[size,size],iconAnchor:[size/2,size/2]
+  });
+  const m=L.marker([s.lat,s.lng],{icon}).addTo(map);
+  const isViewing=!!viewingUserId;
+  m.bindPopup(`
+    <div class="popup-name">${getEmoji(s)} ${s.name}</div>
+    <div class="popup-region">${s.region}${s.district?' · '+s.district:''}</div>
+    ${s.occupied
+      ?'<div class="popup-occ">💔 Тимчасово окуповано<br><em>Ти обов\'язково ще встигнеш</em></div>'
+      :isViewing
+        ?`<div style="font-size:0.78rem;color:${isV?'var(--yellow)':'var(--text-dim)'}">${isV?'✓ Відвідано':'Ще не відвідано'}</div>`
+        :`<button class="popup-btn" onclick="openModalById(${s.id})">${isV?'✏️ Редагувати':'✓ Відмітити'}</button>`
+    }
+  `,{maxWidth:200});
+  markers[s.id]=m;
+}
+
+function updateMapMarkers(){updateMapMarkersForUser(userVisits);}
+
+function updateMapMarkersForUser(visits){
+  if(!map)return;
+  Object.values(markers).forEach(m=>map.removeLayer(m));
+  markers={};
+  allSettlements.forEach(s=>{if(s.lat&&s.lng)addMarker(s,visits);});
+}
+
+window.openModalById=function(id){
+  const city=allSettlements.find(s=>s.id===id);
+  if(city){map.closePopup();openModal(city);}
+};
+
+// LIST
+function applyFilters(){
+  const q=searchQuery.toLowerCase();
+  filtered=allSettlements.filter(s=>{
+    if(q&&!s.name.toLowerCase().includes(q)&&!(s.district||'').toLowerCase().includes(q))return false;
+    if(currentRegion&&s.region!==currentRegion)return false;
+    if(currentFilter==='visited'&&!userVisits[s.id]?.visited)return false;
+    if(currentFilter==='free'&&(userVisits[s.id]?.visited||s.occupied))return false;
+    if(currentFilter==='occupied'&&!s.occupied)return false;
+    return true;
+  });
+  currentPage=1;renderList();
+}
+
+function updateStats(){
+  const free=allSettlements.filter(s=>!s.occupied);
+  const vis=free.filter(s=>userVisits[s.id]?.visited).length;
+  document.getElementById('sVisited').textContent=vis;
+  document.getElementById('sTotal').textContent=allSettlements.length;
+  const pct=free.length?Math.round(vis/free.length*100):0;
+  document.getElementById('sPct').textContent=pct+'%';
+  document.getElementById('progressFill').style.width=pct+'%';
+}
+
+function renderList(){
+  const container=document.getElementById('mainContent');
+  if(!filtered.length){container.innerHTML='<div class="empty-state"><span class="e-ico">🗺️</span>Нічого не знайдено</div>';return;}
+  const start=(currentPage-1)*PAGE_SIZE;
+  const page=filtered.slice(start,start+PAGE_SIZE);
+  const groups={};
+  page.forEach(s=>{if(!groups[s.region])groups[s.region]=[];groups[s.region].push(s);});
+  let html='';
+  for(const[region,cities]of Object.entries(groups)){
+    html+=`<div class="region-block"><div class="region-header"><div class="region-label">${region}</div><div class="region-line"></div><div class="region-count">${cities.length}</div></div><div class="city-grid">`;
+    cities.forEach(s=>{
+      const isV=!!userVisits[s.id]?.visited;
+      const rating=userVisits[s.id]?.rating||0;
+      html+=`<div class="city-card ${isV?'visited':''} ${s.occupied?'occupied':''}" data-id="${s.id}">
+        <div class="card-top"><div class="city-name">${s.name}</div><div class="city-ico">${getEmoji(s)}</div></div>
+        <div class="city-type-badge">${s.type}${s.district?' · '+s.district:''}</div>
+        ${s.occupied?`<div class="occ-hint">Ти обов'язково ще встигнеш 💙</div>`:''}
+        <div class="card-footer"><div class="visit-check">${isV?'✓':''}</div>${isV&&rating?`<div class="city-rating">${'★'.repeat(rating)}</div>`:''}</div>
+      </div>`;
+    });
+    html+=`</div></div>`;
+  }
+  const totalPages=Math.ceil(filtered.length/PAGE_SIZE);
+  if(totalPages>1){
+    html+=`<div class="pagination">`;
+    html+=`<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>← Назад</button>`;
+    const s2=Math.max(1,currentPage-2),e2=Math.min(totalPages,currentPage+2);
+    if(s2>1)html+=`<button class="page-btn" onclick="goPage(1)">1</button>${s2>2?'<span style="color:var(--text-dim);padding:0 0.25rem">…</span>':''}`;
+    for(let i=s2;i<=e2;i++)html+=`<button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+    if(e2<totalPages)html+=`${e2<totalPages-1?'<span style="color:var(--text-dim);padding:0 0.25rem">…</span>':''}<button class="page-btn" onclick="goPage(${totalPages})">${totalPages}</button>`;
+    html+=`<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===totalPages?'disabled':''}>Далі →</button></div>`;
+  }
+  container.innerHTML=html;
+  container.querySelectorAll('.city-card').forEach(card=>{
+    card.addEventListener('click',()=>{
+      const city=allSettlements.find(s=>s.id===parseInt(card.dataset.id));
+      if(city)openModal(city);
+    });
+  });
+}
+
+function goPage(p){const t=Math.ceil(filtered.length/PAGE_SIZE);if(p<1||p>t)return;currentPage=p;renderList();window.scrollTo({top:0,behavior:'smooth'});}
+
+// WIKIPEDIA
+async function fetchWiki(name){
+  try{const r=await fetch(`https://uk.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name)}`);if(!r.ok)return null;return await r.json();}
+  catch{return null;}
+}
+
+// MODAL
+async function openModal(city){
+  activeCity=city;activeRating=userVisits[city.id]?.rating||0;
+  document.getElementById('mName').textContent=city.name;
+  document.getElementById('mRegion').textContent=`${city.region}${city.district?' · '+city.district:''}${city.occupied?' · 🔴 Тимчасово окуповано':''}`;
+  document.getElementById('mDesc').textContent='Завантаження...';
+  document.getElementById('mImgWrap').innerHTML=`<div class="modal-img-ph">${getEmoji(city)}</div>`;
+  document.getElementById('mWikiLink').style.display='none';
+  if(city.occupied){
+    document.getElementById('mOccNote').innerHTML=`<div class="occ-note"><span class="heart">💔</span><p>Ти обов'язково ще встигнеш тут побувати.<br>Україна буде звільнена. 💙🤍</p></div>`;
+    document.getElementById('mNoteSec').style.display='none';
+    document.getElementById('mDivider').style.display='none';
+  }else{
+    document.getElementById('mOccNote').innerHTML='';
+    document.getElementById('mNoteSec').style.display='block';
+    document.getElementById('mDivider').style.display='block';
+  }
+  document.getElementById('mNote').value=userVisits[city.id]?.note||'';
+  updateStars(activeRating);
+  const isV=!!userVisits[city.id]?.visited;
+  document.getElementById('mUnmark').style.display=isV?'block':'none';
+  document.getElementById('mSave').textContent=isV?'Оновити ✓':'Відмітити ✓';
+  document.getElementById('overlay').classList.add('open');
+  document.body.style.overflow='hidden';
+  const wiki=await fetchWiki(city.name);
+  if(wiki){
+    if(wiki.extract)document.getElementById('mDesc').textContent=wiki.extract.slice(0,300)+(wiki.extract.length>300?'...':'');
+    else document.getElementById('mDesc').textContent=`${city.type} у ${city.region} області.`;
+    if(wiki.thumbnail?.source)document.getElementById('mImgWrap').innerHTML=`<img class="modal-img" src="${wiki.thumbnail.source}" alt="${city.name}" onerror="this.parentNode.innerHTML='<div class=\\'modal-img-ph\\'>${getEmoji(city)}</div>'">`;
+    if(wiki.content_urls?.desktop?.page){const l=document.getElementById('mWikiLink');l.href=wiki.content_urls.desktop.page;l.style.display='inline-flex';}
+  }else{
+    document.getElementById('mDesc').textContent=`${city.type} у ${city.region} області.`;
+  }
+}
+
+function closeModal(){document.getElementById('overlay').classList.remove('open');document.body.style.overflow='';activeCity=null;}
+function updateStars(val){document.querySelectorAll('.star').forEach(s=>s.classList.toggle('on',parseInt(s.dataset.v)<=val));}
+document.querySelectorAll('.star').forEach(s=>{s.addEventListener('click',()=>{activeRating=parseInt(s.dataset.v);updateStars(activeRating);});});
+
+document.getElementById('mSave').addEventListener('click',async()=>{
+  if(!activeCity)return;
+  await saveVisit(activeCity.id,document.getElementById('mNote').value.trim(),activeRating);
+  updateStats();renderList();updateMapMarkers();closeModal();
+});
+document.getElementById('mUnmark').addEventListener('click',async()=>{
+  if(!activeCity)return;
+  await removeVisit(activeCity.id);updateStats();renderList();updateMapMarkers();closeModal();
+});
+document.getElementById('mCancel').addEventListener('click',closeModal);
+document.getElementById('closeBtn').addEventListener('click',closeModal);
+document.getElementById('overlay').addEventListener('click',e=>{if(e.target===document.getElementById('overlay'))closeModal();});
+document.getElementById('editOverlay').addEventListener('click',e=>{if(e.target===document.getElementById('editOverlay'))closeEditModal();});
+
+// TABS
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    const t=tab.dataset.tab;
+    document.getElementById('mapSection').classList.toggle('active',t==='map');
+    document.getElementById('listSection').classList.toggle('active',t==='list');
+    if(t==='map'&&map)setTimeout(()=>map.invalidateSize(),100);
+  });
+});
+
+document.querySelectorAll('.pill').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.pill').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');currentFilter=btn.dataset.f;applyFilters();
+  });
+});
+document.getElementById('regionSelect').addEventListener('change',e=>{currentRegion=e.target.value;applyFilters();});
+let searchTimer;
+document.getElementById('searchInput').addEventListener('input',e=>{
+  clearTimeout(searchTimer);searchTimer=setTimeout(()=>{searchQuery=e.target.value;applyFilters();},300);
+});
+
+initAuth();
+fetchAll();
+</script>
+</body>
+</html>
